@@ -297,10 +297,10 @@ def classification_report(y_true, y_pred, digits=2, suffix=False):
         report : string. Text summary of the precision, recall, F1 score for each class.
 
     Examples:
-        >>> from seqeval.metrics import classification_report
-        >>> y_true = [['O', 'O', 'O', 'B-MISC', 'I-MISC', 'I-MISC', 'O'], ['B-PER', 'I-PER', 'O']]
-        >>> y_pred = [['O', 'O', 'B-MISC', 'I-MISC', 'I-MISC', 'I-MISC', 'O'], ['B-PER', 'I-PER', 'O']]
-        >>> print(classification_report(y_true, y_pred))
+        from seqeval.metrics import classification_report
+        y_true = [['O', 'O', 'O', 'B-MISC', 'I-MISC', 'I-MISC', 'O'], ['B-PER', 'I-PER', 'O']]
+        y_pred = [['O', 'O', 'B-MISC', 'I-MISC', 'I-MISC', 'I-MISC', 'O'], ['B-PER', 'I-PER', 'O']]
+        print(classification_report(y_true, y_pred))
                      precision    recall  f1-score   support
         <BLANKLINE>
                MISC       0.00      0.00      0.00         1
@@ -322,7 +322,7 @@ def classification_report(y_true, y_pred, digits=2, suffix=False):
     for e in pred_entities:
         d2[e[0]].add((e[1], e[2]))
 
-    last_line_heading = 'macro avg'
+    last_line_heading = 'weighted avg'
     width = max(name_width, len(last_line_heading), digits)
 
     headers = ["precision", "recall", "f1-score", "support"]
@@ -333,7 +333,11 @@ def classification_report(y_true, y_pred, digits=2, suffix=False):
     row_fmt = u'{:>{width}s} ' + u' {:>9.{digits}f}' * 3 + u' {:>9}\n'
 
     ps, rs, f1s, s = [], [], [], []
-    for type_name, true_entities in d1.items():
+
+    d1_list = list(d1.items())
+    d1_list.sort()  # 固定输出实体顺序
+
+    for type_name, true_entities in d1_list:
         pred_entities = d2[type_name]
         nb_correct = len(true_entities & pred_entities)
         nb_pred = len(pred_entities)
@@ -357,6 +361,12 @@ def classification_report(y_true, y_pred, digits=2, suffix=False):
                              precision_score(y_true, y_pred, suffix=suffix),
                              recall_score(y_true, y_pred, suffix=suffix),
                              f1_score(y_true, y_pred, suffix=suffix),
+                             np.sum(s),
+                             width=width, digits=digits)
+    report += row_fmt.format('macro avg',
+                             np.average(ps),
+                             np.average(rs),
+                             np.average(f1s),
                              np.sum(s),
                              width=width, digits=digits)
     report += row_fmt.format(last_line_heading,
